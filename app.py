@@ -11,12 +11,14 @@ from selenium.webdriver.chrome.service import Service
 from selenium.webdriver.chrome.options import Options
 from webdriver_manager.chrome import ChromeDriverManager
 
-# Load environment variables
+# Load environment variables for local development
 load_dotenv()
-GROK_API_KEY = os.getenv("GROQ_API_KEY")
+
+# Get API key from Streamlit secrets (cloud) or .env (local)
+GROK_API_KEY = os.getenv("GROQ_API_KEY", st.secrets.get("GROQ_API_KEY"))
 
 if not GROK_API_KEY:
-    st.error("Error: GROK_API_KEY is not set. Check your .env file.")
+    st.error("Error: GROK_API_KEY is not set. Check your .env file or Streamlit secrets.")
     st.stop()
 
 GROK_API_URL = "https://api.groq.com/openai/v1/chat/completions"
@@ -67,11 +69,11 @@ def scrape_youtube_comments(video_url):
 def clean_comment(comment):
     return re.sub(r'[^\w\s.,!?\'"-]', '', comment)
 
-spam_keywords = ["follow me", "free money", "click this link", "DM us", "buy followers", "promotion", "promo code","earn cash","instant profit"]
+spam_keywords = ["follow me", "free money", "click this link", "DM us", "buy followers", "promotion", "promo code", "earn cash", "instant profit"]
 
 # Function to detect spam percentage
 def detect_spam(comments):
-    spam_keywords = ["follow me", "free money", "click this link", "DM us", "buy followers", "promotion", "promo code","earn cash","instant profit"]
+    spam_keywords = ["follow me", "free money", "click this link", "DM us", "buy followers", "promotion", "promo code", "earn cash", "instant profit"]
     total_comments = len(comments)
     spam_count = sum(1 for comment in comments if any(keyword in comment.lower() for keyword in spam_keywords))
 
@@ -83,26 +85,24 @@ def detect_spam(comments):
     return round(spam_percentage, 2)
 
 # Function to analyze comments with Grok AI
-def analyze_comments_with_grok(comments,spam_keywords):
+def analyze_comments_with_grok(comments, spam_keywords):
     messages = [
-    {"role": "system", "content": "You are an expert social media analyst."},
-    {"role": "user", "content": f"Analyze these comments:\n\n{comments}\n\n"
-                                 "Tasks:\n"
-                                 "1. Determine the positive reach (engagement sentiment).\n"
-                                 "2. Identify negative reach (if any).\n"
-                                 "3. Detect spam based on patterns such as repetitive messages, excessive promotions, unnatural text, bot-like behavior, or links.\n"
-                                 "4. Suggest improvements for better audience interaction.\n"
-                                 "5. Provide two actionable recommendations to boost engagement.\n"
-                                 "6. Report the spam detected and explain why those messages were classified as spam.\n\n"
-                                 "Format your response as:\n"
-                                 "All responses should not exceed 100 words\n"
-                                 "- Positive Reach: (percentage or description)\n"
-                                 "- Negative Reach: (percentage or description)\n"
-                                 "- Suggested Improvements: (list)\n"
-                                 "- Recommendations (two points): (list)\n"}
-]
-
-    
+        {"role": "system", "content": "You are an expert social media analyst."},
+        {"role": "user", "content": f"Analyze these comments:\n\n{comments}\n\n"
+                                     "Tasks:\n"
+                                     "1. Determine the positive reach (engagement sentiment).\n"
+                                     "2. Identify negative reach (if any).\n"
+                                     "3. Detect spam based on patterns such as repetitive messages, excessive promotions, unnatural text, bot-like behavior, or links.\n"
+                                     "4. Suggest improvements for better audience interaction.\n"
+                                     "5. Provide two actionable recommendations to boost engagement.\n"
+                                     "6. Report the spam detected and explain why those messages were classified as spam.\n\n"
+                                     "Format your response as:\n"
+                                     "All responses should not exceed 100 words\n"
+                                     "- Positive Reach: (percentage or description)\n"
+                                     "- Negative Reach: (percentage or description)\n"
+                                     "- Suggested Improvements: (list)\n"
+                                     "- Recommendations (two points): (list)\n"}
+    ]
 
     payload = {
         "model": "llama3-8b-8192",
@@ -195,8 +195,8 @@ if analyze_button:
         st.success(f"Comments scraped successfully from {platform}!")
 
         with st.spinner("Analyzing comments with AI..."):
-            ai_response = analyze_comments_with_grok(comments_text,spam_keywords)
-        
+            ai_response = analyze_comments_with_grok(comments_text, spam_keywords)
+
         spam_percentage = detect_spam(cleaned_comments)
 
         st.subheader(f"💡 AI Insights on {platform}:")
