@@ -3,6 +3,6 @@ re
 os
 requests
 streamlit
-dotenv
+python-dotenv==1.0.1
 selenium
 webdriver-manager
